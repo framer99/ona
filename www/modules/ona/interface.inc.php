@@ -264,7 +264,7 @@ function interface_modify($options="") {
     printmsg("DEBUG => interface_modify({$options}) called", 3);
 
     // Version - UPDATE on every edit!
-    $version = '1.11';
+    $version = '1.12';
 
     // Parse incoming options string to an array
     $options = parse_options($options);
@@ -391,18 +391,18 @@ EOM
             return(array(7, $self['error'] . "\n"));
         }
 
-        // Validate that the IP address supplied isn't the base or broadcast of the subnet
-        if ((is_ipv4($options['set_ip']) && ($options['set_ip'] == $subnet['ip_addr'])) || (!is_ipv4($options['set_ip']) && (!gmp_cmp(gmp_init($options['set_ip']),gmp_init($subnet['ip_addr'])))) ) {
-            printmsg("DEBUG => IP address (" . ip_mangle($orig_ip,'dotted') . ") can't be a subnet's base address!",3);
-            $self['error'] = "ERROR => IP address (" . ip_mangle($orig_ip,'dotted') . ") can't be a subnet's base address!";
-            return(array(8, $self['error'] . "\n"));
-        }
-        if (is_ipv4($options['set_ip']) && ($options['set_ip'] == ((4294967295 - $subnet['ip_mask']) + $subnet['ip_addr']) )
-            || (!is_ipv4($options['set_ip']) && (!gmp_cmp(gmp_init($options['set_ip']),gmp_add(gmp_init($subnet['ip_addr']),gmp_sub("340282366920938463463374607431768211455", $subnet['ip_mask'])))))
-        ) {
-            printmsg("DEBUG => IP address (" . ip_mangle($orig_ip,'dotted') . ") can't be a subnet's broadcast address!",3);
-            $self['error'] = "ERROR => IP address (" . ip_mangle($orig_ip,'dotted') . ") can't be the subnet broadcast address!";
-            return(array(9, $self['error'] . "\n"));
+        // Validate that the IP address supplied isn't the base or broadcast of the subnet, as long as it is not /32 or /31
+        if ($subnet['ip_mask'] < 4294967294) {
+            if ($options['ip'] == $subnet['ip_addr']) {
+                printmsg("DEBUG => IP address (" . ip_mangle($orig_ip,'dotted') . ") can't be a subnet's base address!{$subnet['ip_addr']}",3);
+                $self['error'] = "ERROR => IP address (" . ip_mangle($orig_ip,'dotted') . ") can't be a subnet's base address!";
+                return(array(8, $self['error'] . "\n"));
+            }
+            if ($options['ip'] == ((4294967295 - $subnet['ip_mask']) + $subnet['ip_addr']) ) {
+                printmsg("DEBUG => IP address (" . ip_mangle($orig_ip,'dotted') . ") can't be a subnet's broadcast address!",3);
+                $self['error'] = "ERROR => IP address (" . ip_mangle($orig_ip,'dotted') . ") can't be the subnet broadcast address!";
+                return(array(9, $self['error'] . "\n"));
+            }
         }
 
         // Allow some overrides.
